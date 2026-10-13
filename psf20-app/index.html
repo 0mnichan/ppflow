@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PSF-20 Printer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1553d6">
+<link rel="icon" href="icon-192.png">
 <style>
 :root{--bg:#e9ecef;--panel:#fff;--ink:#15191e;--mute:#5b6570;--line:#cdd3da;--acc:#1553d6;--accfg:#fff;--ok:#1a8a4a;--bad:#c0352b;--warn:#9a6a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151a;--panel:#1b2027;--ink:#e8ecf1;--mute:#97a1ad;--line:#2c343d;--acc:#6aa2ff;--accfg:#08121f;--ok:#4cc27c;--bad:#ff7b72;--warn:#e3b341}}
@@ -49,6 +52,7 @@ details{margin-top:14px}
   <button class="p" id="conn">Connect</button>
 </header>
 <div id="msg" role="status"></div>
+<details id="diag" open><summary>Connection check</summary><div id="diagbody" class="hint"></div><label style="margin-top:6px"><input type="checkbox" id="showall"> Show all Bluetooth devices in the picker (use if PSF-20 is not listed)</label></details>
 <nav role="tablist">
   <button role="tab" data-t="text" aria-selected="true">Text</button>
   <button role="tab" data-t="image" aria-selected="false">Image</button>
@@ -158,15 +162,34 @@ async function link(){
   n.addEventListener('characteristicvaluechanged',e=>{const a=new Uint8Array(e.target.value.buffer);const t=asc(a);log('printer: '+hex(a)+'  '+t,/NACK/.test(t)?'warn':'')});
   setState(true);log('connected')
 }
+function hint(e){
+  const m=e&&e.message?e.message:String(e);
+  if(e&&e.name==='NotFoundError'&&/cancel|chooser/i.test(m))return 'No printer chosen. Switch the printer on, close anything else connected to it, then pick PSF-20-... in the list.';
+  if(e&&e.name==='NotFoundError')return 'No printer found. Check it is on and not connected to your phone, nRF Connect or a script. Tick "Show all Bluetooth devices" below if it is not listed.';
+  if(/br-connection-profile-unavailable|NetworkError|GATT|Connection attempt failed|Unsupported device/i.test(m))
+    return m+'. Only one device can use the printer at a time, so disconnect everything else first. On Linux, BlueZ must also be LE-only: sudo btmgmt power off; sudo btmgmt bredr off; sudo btmgmt power on.';
+  if(e&&e.name==='SecurityError')return m+'. Web Bluetooth only works on https:// pages or http://localhost.';
+  return m
+}
+async function diag(){
+  const r=[['Secure page (https or localhost)',window.isSecureContext],['Web Bluetooth in this browser',!!navigator.bluetooth]];
+  if(navigator.bluetooth&&navigator.bluetooth.getAvailability){try{r.push(['Bluetooth adapter available',await navigator.bluetooth.getAvailability()])}catch(e){r.push(['Bluetooth adapter available','unknown'])}}
+  const b=$('#diagbody');b.textContent='';
+  for(const [k,v] of r){const d=document.createElement('div');d.textContent=(v===true?'OK   ':v===false?'FAIL ':'?    ')+k;d.style.color=v===true?'var(--ok)':v===false?'var(--bad)':'var(--mute)';b.append(d)}
+  const ua=document.createElement('div');ua.textContent=navigator.userAgent;b.append(ua);
+  if(!navigator.bluetooth){const t=document.createElement('div');t.style.cssText='margin-top:6px;color:var(--bad)';
+    t.textContent='This browser cannot use Web Bluetooth. Use Chrome, Edge or Opera on Android, Windows, macOS, ChromeOS or Linux. Firefox, Safari and every browser on iPhone/iPad do not support it. On Linux Chrome, if this stays FAIL, open chrome://flags/#enable-experimental-web-platform-features, enable it and restart.';b.append(t)}
+  else if(!window.isSecureContext){const t=document.createElement('div');t.style.cssText='margin-top:6px;color:var(--bad)';t.textContent='Open this page over https:// (for example your Vercel link) or http://localhost.';b.append(t)}
+}
 async function connect(){
   try{
-    if(!navigator.bluetooth)throw Error('This browser has no Web Bluetooth. Use Chrome or Edge.');
+    if(!navigator.bluetooth)throw Error('This browser has no Web Bluetooth. See the connection check above.');
     if(!dev||!$('#conn').dataset.again){
-      dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'PSF-20'}],optionalServices:[SVC]});
+      dev=await navigator.bluetooth.requestDevice($('#showall').checked?{acceptAllDevices:true,optionalServices:[SVC]}:{filters:[{namePrefix:'PSF-20'}],optionalServices:[SVC]});
       dev.addEventListener('gattserverdisconnected',()=>{setState(false);log('disconnected','warn')});
     }
     await link();$('#conn').dataset.again=1;say('Connected','ok')
-  }catch(e){say(e.message,'err');log(e.message,'err')}
+  }catch(e){const h=hint(e);say(h,'err');log(e.name+': '+(e.message||e),'err');delete $('#conn').dataset.again}
 }
 async function send(data){
   if(!dev)throw Error('Connect to the printer first.');
@@ -295,7 +318,8 @@ document.addEventListener('input',e=>{
 $('#conn').onclick=connect;
 for(const k of ['chunk','delay','band','feed'])$('#c_'+k).value=cfg[k];
 $('#c_resp').checked=cfg.resp;
-renderText();
+renderText();diag();
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
