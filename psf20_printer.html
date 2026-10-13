@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSF-20 Printer</title>
+<style>
+:root{--bg:#e9ecef;--panel:#fff;--ink:#15191e;--mute:#5b6570;--line:#cdd3da;--acc:#1553d6;--accfg:#fff;--ok:#1a8a4a;--bad:#c0352b;--warn:#9a6a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151a;--panel:#1b2027;--ink:#e8ecf1;--mute:#97a1ad;--line:#2c343d;--acc:#6aa2ff;--accfg:#08121f;--ok:#4cc27c;--bad:#ff7b72;--warn:#e3b341}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:760px;margin:0 auto;padding:12px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+h1{font-size:20px;margin:0;flex:1;letter-spacing:-.01em}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mute);display:inline-block;margin-right:6px}
+.dot.on{background:var(--ok)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 14px;cursor:pointer}
+button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
+button:disabled{opacity:.5;cursor:wait}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+nav button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:8px 14px}
+nav button[aria-selected=true]{border-color:var(--acc);font-weight:600}
+section{display:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+section.on{display:block}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+label{display:flex;gap:6px;align-items:center;color:var(--mute);font-size:14px}
+input[type=text],input[type=number],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+input[type=number]{width:84px}
+textarea{width:100%;min-height:110px;resize:vertical}
+input[type=range]{width:140px}
+.paper{background:#fff;width:384px;max-width:100%;margin:10px 0;box-shadow:0 0 0 1px var(--line);line-height:0}
+.paper canvas{width:100%;image-rendering:pixelated}
+.hint{color:var(--mute);font-size:13px;margin:4px 0}
+#msg{min-height:1.4em;margin:8px 0;font-weight:600}
+#msg.err{color:var(--bad)}#msg.ok{color:var(--ok)}
+#log{font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:200px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:6px}
+#log .warn{color:var(--warn)}#log .err{color:var(--bad)}
+details{margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>PSF-20 Printer</h1>
+  <span><span class="dot" id="dot"></span><span id="st">Not connected</span></span>
+  <button class="p" id="conn">Connect</button>
+</header>
+<div id="msg" role="status"></div>
+<nav role="tablist">
+  <button role="tab" data-t="text" aria-selected="true">Text</button>
+  <button role="tab" data-t="image" aria-selected="false">Image</button>
+  <button role="tab" data-t="codes" aria-selected="false">QR and barcodes</button>
+  <button role="tab" data-t="tools" aria-selected="false">Tools</button>
+</nav>
+
+<section id="t-text" class="on" data-r="renderText">
+  <textarea id="txt" aria-label="Text to print">Hello from my own app!
+Any language works: தமிழ், 你好, ₹100</textarea>
+  <div class="row">
+    <label>Size <input type="number" id="fs" value="28" min="10" max="120"></label>
+    <label>Font <select id="fam"><option value="system-ui,sans-serif">Sans</option><option value="Georgia,serif">Serif</option><option value="ui-monospace,Consolas,monospace">Mono</option><option value="cursive">Script</option></select></label>
+    <label>Align <select id="al"><option>left</option><option>center</option><option>right</option></select></label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="bd"> Bold</label>
+    <label><input type="checkbox" id="it"> Italic</label>
+    <label><input type="checkbox" id="tinv"> White on black</label>
+    <label>Darkness <input type="range" id="tthr" min="60" max="220" value="150"></label>
+  </div>
+  <div class="paper"><canvas id="tp" width="384" height="1"></canvas></div>
+  <button class="p" data-do="printText">Print text</button>
+  <p class="hint">Text is drawn as an image, so any font or script your computer can show will print. 48 mm wide.</p>
+</section>
+
+<section id="t-image" data-r="renderImg">
+  <div class="row"><input type="file" id="file" accept="image/*" aria-label="Choose image"></div>
+  <div class="row">
+    <label>Method <select id="dm"><option value="fs">Photo (Floyd-Steinberg)</option><option value="atk">Photo (Atkinson)</option><option value="thr">Sharp black and white</option></select></label>
+    <label>Cutoff <input type="range" id="ithr" min="40" max="230" value="128"></label>
+  </div>
+  <div class="row">
+    <label>Brightness <input type="range" id="br" min="50" max="170" value="100"></label>
+    <label>Contrast <input type="range" id="co" min="50" max="220" value="110"></label>
+  </div>
+  <div class="row">
+    <label><input type="checkbox" id="rot"> Rotate 90 degrees</label>
+    <label><input type="checkbox" id="iinv"> Invert</label>
+  </div>
+  <div class="paper"><canvas id="ip" width="384" height="1"></canvas></div>
+  <button class="p" data-do="printImg">Print image</button>
+</section>
+
+<section id="t-codes">
+  <div class="row">
+    <label>Type <select id="ctype"><option value="qr">QR code</option><option value="c128">Code 128</option><option value="c39">Code 39</option><option value="ean13">EAN-13</option><option value="upca">UPC-A</option></select></label>
+    <label>Align <select id="calign"><option value="1">center</option><option value="0">left</option><option value="2">right</option></select></label>
+  </div>
+  <div class="row"><input type="text" id="cdata" value="https://rohithjv.in" style="flex:1;min-width:220px" aria-label="Content"></div>
+  <div class="row" id="qropts">
+    <label>Module size <input type="number" id="qs" value="6" min="1" max="16"></label>
+    <label>Error correction <select id="qe"><option value="48">L</option><option value="49" selected>M</option><option value="50">Q</option><option value="51">H</option></select></label>
+  </div>
+  <div class="row" id="bopts" hidden>
+    <label>Height <input type="number" id="bh" value="80" min="20" max="255"></label>
+    <label>Bar width <input type="number" id="bw" value="2" min="2" max="6"></label>
+  </div>
+  <button class="p" data-do="printCode">Print</button>
+  <p class="hint">EAN-13 needs 12 or 13 digits, UPC-A 11 or 12, Code 39 capital letters and digits. These use the printer's own commands.</p>
+</section>
+
+<section id="t-tools">
+  <div class="row">
+    <button data-do="feed3">Feed 3 lines</button>
+    <button data-do="feed10">Feed 10 lines</button>
+    <button data-do="testPage">Test page</button>
+  </div>
+  <div class="row">
+    <label>Rows <input type="number" id="srows" value="400" min="50" max="3000"></label>
+    <button data-do="stress">Speed and integrity test</button>
+  </div>
+  <p class="hint">The test prints an even checkerboard. If you see skipped or garbled bands, lower the chunk size or add a delay below.</p>
+  <div class="row"><input type="text" id="raw" placeholder="Raw hex, e.g. 1B 40 48 69 0A" style="flex:1;min-width:220px" aria-label="Raw hex bytes"><button data-do="sendRaw">Send</button></div>
+  <h3 style="margin:16px 0 0;font-size:15px">Transfer settings</h3>
+  <div class="row">
+    <label>Chunk bytes <input type="number" id="c_chunk" min="20" max="512"></label>
+    <label>Delay ms <input type="number" id="c_delay" min="0" max="200"></label>
+    <label>Band rows <input type="number" id="c_band" min="16" max="1024"></label>
+    <label>Feed after <input type="number" id="c_feed" min="0" max="20"></label>
+    <label><input type="checkbox" id="c_resp"> Write with response (slower, safer)</label>
+  </div>
+  <p class="hint">Chunk 20 always works. Over a good link 100 to 185 is usually fine and much faster.</p>
+</section>
+
+<details open><summary>Log</summary><div id="log" aria-live="off"></div></details>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const SVC='49535343-fe7d-4ae5-8fa9-9fafd205e455',WR='49535343-8841-43f4-a8d4-ecbe34729bb3',NT='49535343-1e4d-4bd9-ba61-23c647249616',W=384,WB=48;
+let dev,wch,img=null,cfg={chunk:20,delay:0,band:128,feed:3,resp:false};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('psf20')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('psf20',JSON.stringify(cfg))}catch(e){}};
+const hex=a=>[...a].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+const asc=a=>[...a].map(b=>b>31&&b<127?String.fromCharCode(b):'.').join('');
+function log(m,c=''){const d=document.createElement('div');d.className=c;d.textContent=new Date().toTimeString().slice(0,8)+'  '+m;$('#log').prepend(d);while($('#log').children.length>150)$('#log').lastChild.remove()}
+function say(m,c=''){$('#msg').textContent=m;$('#msg').className=c}
+function cat(...p){const a=p.map(x=>typeof x==='number'?Uint8Array.of(x):typeof x==='string'?Uint8Array.from(x,c=>c.charCodeAt(0)<128?c.charCodeAt(0):63):x);const o=new Uint8Array(a.reduce((n,x)=>n+x.length,0));let i=0;for(const x of a){o.set(x,i);i+=x.length}return o}
+
+/* ---------- Bluetooth ---------- */
+function setState(on){$('#dot').className='dot'+(on?' on':'');$('#st').textContent=on?'Connected to '+dev.name:'Not connected';$('#conn').textContent=on?'Reconnect':'Connect'}
+async function link(){
+  const s=await dev.gatt.connect(),v=await s.getPrimaryService(SVC);
+  wch=await v.getCharacteristic(WR);
+  const n=await v.getCharacteristic(NT);await n.startNotifications();
+  n.addEventListener('characteristicvaluechanged',e=>{const a=new Uint8Array(e.target.value.buffer);const t=asc(a);log('printer: '+hex(a)+'  '+t,/NACK/.test(t)?'warn':'')});
+  setState(true);log('connected')
+}
+async function connect(){
+  try{
+    if(!navigator.bluetooth)throw Error('This browser has no Web Bluetooth. Use Chrome or Edge.');
+    if(!dev||!$('#conn').dataset.again){
+      dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'PSF-20'}],optionalServices:[SVC]});
+      dev.addEventListener('gattserverdisconnected',()=>{setState(false);log('disconnected','warn')});
+    }
+    await link();$('#conn').dataset.again=1;say('Connected','ok')
+  }catch(e){say(e.message,'err');log(e.message,'err')}
+}
+async function send(data){
+  if(!dev)throw Error('Connect to the printer first.');
+  if(!dev.gatt.connected){log('relinking','warn');await link()}
+  const c=cfg.chunk;
+  for(let i=0;i<data.length;i+=c){
+    const p=data.slice(i,i+c);
+    if(wch.writeValueWithoutResponse&&!cfg.resp)await wch.writeValueWithoutResponse(p);else await wch.writeValue(p);
+    if(cfg.delay)await sleep(cfg.delay)
+  }
+}
+
+/* ---------- Bitmaps ---------- */
+function toBits(c,mode,thr,inv){
+  const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(w*h),o=new Uint8Array(h*WB);
+  for(let i=0;i<w*h;i++){const v=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];g[i]=inv?255-v:v}
+  const add=(x,y,e)=>{if(x>=0&&x<w&&y<h)g[y*w+x]+=e};
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=y*w+x,v=g[i],n=v<thr?0:255,e=v-n;
+    if(!n)o[y*WB+(x>>3)]|=0x80>>(x&7);
+    if(mode==='fs'){add(x+1,y,e*7/16);add(x-1,y+1,e*3/16);add(x,y+1,e*5/16);add(x+1,y+1,e/16)}
+    else if(mode==='atk'){const q=e/8;add(x+1,y,q);add(x+2,y,q);add(x-1,y+1,q);add(x,y+1,q);add(x+1,y+1,q);add(x,y+2,q)}
+  }
+  return o
+}
+function show(id,bits,h){
+  const c=$(id);c.width=W;c.height=h;const x=c.getContext('2d'),im=x.createImageData(W,h);
+  for(let y=0;y<h;y++)for(let i=0;i<W;i++){const k=(y*W+i)*4,v=bits[y*WB+(i>>3)]&(0x80>>(i&7))?0:255;im.data[k]=im.data[k+1]=im.data[k+2]=v;im.data[k+3]=255}
+  x.putImageData(im,0,0)
+}
+async function printBits(bits,h){
+  await send(cat(0x1b,0x40));
+  for(let y=0;y<h;y+=cfg.band){const n=Math.min(cfg.band,h-y);await send(cat(0x1d,0x76,0x30,0,WB,0,n&255,n>>8,bits.subarray(y*WB,(y+n)*WB)))}
+  await send(cat(0x1b,0x64,cfg.feed))
+}
+
+/* ---------- Text ---------- */
+function brk(x,l,m){const r=[];let c='';for(const ch of l){if(x.measureText(c+ch).width>m&&c){r.push(c);c=ch}else c+=ch}r.push(c);return r}
+function wrap(x,s,m){
+  const out=[];
+  for(const p of s.split('\n')){let cur='';for(const w of p.split(' ')){const t=cur?cur+' '+w:w;if(x.measureText(t).width<=m||!cur)cur=t;else{out.push(cur);cur=w}}out.push(cur)}
+  return out.flatMap(l=>x.measureText(l).width>m?brk(x,l,m):[l])
+}
+function renderText(){
+  const fs=+$('#fs').value||28,pad=10,lh=Math.round(fs*1.25);
+  const font=`${$('#it').checked?'italic ':''}${$('#bd').checked?'bold ':''}${fs}px ${$('#fam').value}`;
+  const c=document.createElement('canvas');c.width=W;c.height=10;let x=c.getContext('2d');x.font=font;
+  const lines=wrap(x,$('#txt').value,W-2*pad);
+  c.height=Math.max(1,lines.length*lh+2*pad);x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,c.height);x.fillStyle='#000';x.font=font;x.textBaseline='top';
+  const al=$('#al').value;x.textAlign=al;const px=al==='left'?pad:al==='center'?W/2:W-pad;
+  lines.forEach((l,i)=>x.fillText(l,px,pad+i*lh));
+  const bits=toBits(c,'thr',+$('#tthr').value,$('#tinv').checked);show('#tp',bits,c.height);
+  return{bits,h:c.height}
+}
+
+/* ---------- Image ---------- */
+$('#file').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f),i=new Image();
+  i.onload=()=>{img=i;URL.revokeObjectURL(u);renderImg()};i.onerror=()=>say('Could not read that image.','err');i.src=u
+};
+function renderImg(){
+  if(!img)return null;
+  const r=$('#rot').checked,sw=r?img.height:img.width,sh=r?img.width:img.height,h=Math.max(1,Math.round(sh*W/sw));
+  const c=document.createElement('canvas');c.width=W;c.height=h;const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,h);x.filter=`brightness(${$('#br').value}%) contrast(${$('#co').value}%)`;
+  if(r){x.translate(W,0);x.rotate(Math.PI/2);x.drawImage(img,0,0,h,W)}else x.drawImage(img,0,0,W,h);
+  const bits=toBits(c,$('#dm').value,+$('#ithr').value,$('#iinv').checked);show('#ip',bits,h);
+  return{bits,h}
+}
+
+/* ---------- Codes ---------- */
+function codeBytes(){
+  const t=$('#ctype').value,d=$('#cdata').value,al=cat(0x1b,0x61,+$('#calign').value);
+  if(!d)throw Error('Enter something to encode.');
+  if(t==='qr'){
+    const s=new TextEncoder().encode(d),n=s.length+3;
+    return cat(al,0x1d,0x28,0x6b,4,0,0x31,0x41,0x32,0,0x1d,0x28,0x6b,3,0,0x31,0x43,+$('#qs').value,0x1d,0x28,0x6b,3,0,0x31,0x45,+$('#qe').value,0x1d,0x28,0x6b,n&255,n>>8,0x31,0x50,0x30,s,0x1d,0x28,0x6b,3,0,0x31,0x51,0x30,'\n')
+  }
+  if(t==='ean13'&&!/^\d{12,13}$/.test(d))throw Error('EAN-13 needs 12 or 13 digits.');
+  if(t==='upca'&&!/^\d{11,12}$/.test(d))throw Error('UPC-A needs 11 or 12 digits.');
+  if(t==='c39'&&!/^[0-9A-Z \-.$\/+%]+$/.test(d))throw Error('Code 39 takes capital letters, digits and - . $ / + %');
+  const m={c128:73,c39:69,ean13:67,upca:65}[t],body=t==='c128'?'{B'+d:d;
+  return cat(al,0x1d,0x68,+$('#bh').value,0x1d,0x77,+$('#bw').value,0x1d,0x48,2,0x1d,0x6b,m,body.length,body,'\n')
+}
+
+/* ---------- Actions ---------- */
+const act={
+  async printText(){const r=renderText();await printBits(r.bits,r.h)},
+  async printImg(){const r=renderImg();if(!r)throw Error('Choose an image first.');await printBits(r.bits,r.h)},
+  async printCode(){const b=codeBytes();await send(cat(0x1b,0x40));await send(b);await send(cat(0x1b,0x61,0,0x1b,0x64,cfg.feed))},
+  async feed3(){await send(cat(0x1b,0x64,3))},
+  async feed10(){await send(cat(0x1b,0x64,10))},
+  async testPage(){
+    await send(cat(0x1b,0x40,0x1b,0x61,1,'PSF-20 test page\n',0x1b,0x61,0));
+    await send(cat(0x1b,0x61,1,0x1d,0x28,0x6b,4,0,0x31,0x41,0x32,0,0x1d,0x28,0x6b,3,0,0x31,0x43,5,0x1d,0x28,0x6b,3,0,0x31,0x45,49,0x1d,0x28,0x6b,10,0,0x31,0x50,0x30,'PSF20 OK!',0x1d,0x28,0x6b,3,0,0x31,0x51,0x30,'\n',0x1b,0x61,0));
+    await send(cat(0x1b,0x64,cfg.feed))
+  },
+  async stress(){
+    const n=Math.max(50,+$('#srows').value||400),b=new Uint8Array(n*WB);
+    for(let y=0;y<n;y++)for(let i=0;i<WB;i++)b[y*WB+i]=(i+((y>>3)&1))%2?0:255;
+    const t=performance.now();await printBits(b,n);
+    const s=(performance.now()-t)/1000;log(`${n*WB+n} bytes sent in ${s.toFixed(1)} s (${Math.round(n*WB/s)} B/s)`)
+  },
+  async sendRaw(){
+    const h=$('#raw').value.replace(/[^0-9a-f]/gi,'');
+    if(!h.length||h.length%2)throw Error('Enter whole hex bytes.');
+    await send(Uint8Array.from(h.match(/../g),x=>parseInt(x,16)))
+  }
+};
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-do]');
+  if(b){b.disabled=true;say('Printing...');
+    try{await act[b.dataset.do]();say('Done','ok')}catch(x){say(x.message,'err');log(x.message,'err')}
+    b.disabled=false;return}
+  const t=e.target.closest('nav button');
+  if(t){document.querySelectorAll('nav button').forEach(n=>n.setAttribute('aria-selected',n===t));
+    document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='t-'+t.dataset.t))}
+});
+document.addEventListener('input',e=>{
+  const p=e.target.closest('[data-r]');if(p&&p.id!=='t-codes'){const f=window[p.dataset.r];f&&f()}
+  if(e.target.id==='ctype'){const q=e.target.value==='qr';$('#qropts').hidden=!q;$('#bopts').hidden=q;$('#cdata').value=q?'https://rohithjv.in':({c128:'PSF20-001',c39:'PSF20',ean13:'4006381333931',upca:'036000291452'})[e.target.value]}
+  const k=e.target.id;
+  if(k&&k.startsWith('c_')){const v=k==='c_resp'?e.target.checked:Math.max(0,+e.target.value||0);cfg[k.slice(2)]=v;if(cfg.chunk<20)cfg.chunk=20;save()}
+});
+$('#conn').onclick=connect;
+for(const k of ['chunk','delay','band','feed'])$('#c_'+k).value=cfg[k];
+$('#c_resp').checked=cfg.resp;
+renderText();
+</script>
+</body>
+</html>
