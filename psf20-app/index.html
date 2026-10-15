@@ -2,324 +2,137 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>PSF-20 Printer</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1553d6">
 <link rel="icon" href="icon-192.png">
-<style>
-:root{--bg:#e9ecef;--panel:#fff;--ink:#15191e;--mute:#5b6570;--line:#cdd3da;--acc:#1553d6;--accfg:#fff;--ok:#1a8a4a;--bad:#c0352b;--warn:#9a6a00}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151a;--panel:#1b2027;--ink:#e8ecf1;--mute:#97a1ad;--line:#2c343d;--acc:#6aa2ff;--accfg:#08121f;--ok:#4cc27c;--bad:#ff7b72;--warn:#e3b341}}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
-main{max-width:760px;margin:0 auto;padding:12px}
-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-h1{font-size:20px;margin:0;flex:1;letter-spacing:-.01em}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--mute);display:inline-block;margin-right:6px}
-.dot.on{background:var(--ok)}
-button,input,select,textarea{font:inherit;color:inherit}
-button{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 14px;cursor:pointer}
-button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
-button:disabled{opacity:.5;cursor:wait}
-:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
-nav button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:8px 14px}
-nav button[aria-selected=true]{border-color:var(--acc);font-weight:600}
-section{display:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
-section.on{display:block}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
-label{display:flex;gap:6px;align-items:center;color:var(--mute);font-size:14px}
-input[type=text],input[type=number],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
-input[type=number]{width:84px}
-textarea{width:100%;min-height:110px;resize:vertical}
-input[type=range]{width:140px}
-.paper{background:#fff;width:384px;max-width:100%;margin:10px 0;box-shadow:0 0 0 1px var(--line);line-height:0}
-.paper canvas{width:100%;image-rendering:pixelated}
-.hint{color:var(--mute);font-size:13px;margin:4px 0}
-#msg{min-height:1.4em;margin:8px 0;font-weight:600}
-#msg.err{color:var(--bad)}#msg.ok{color:var(--ok)}
-#log{font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:200px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:6px}
-#log .warn{color:var(--warn)}#log .err{color:var(--bad)}
-details{margin-top:14px}
-</style>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<main>
-<header>
-  <h1>PSF-20 Printer</h1>
-  <span><span class="dot" id="dot"></span><span id="st">Not connected</span></span>
-  <button class="p" id="conn">Connect</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-9 9"/></symbol>
+    <symbol id="i-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 20h2M20 14v2"/></symbol>
+    <symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 5v14M7 5v14M10.5 5v14M13 5v14M16.5 5v14M20 5v14"/></symbol>
+    <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></symbol>
+    <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5"/></symbol>
+    <symbol id="i-line" viewBox="0 0 24 24"><path d="M4 19L20 5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><rect x="9" y="3" width="12" height="12" rx="1"/><path d="M15 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h4"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><rect x="3" y="9" width="12" height="12" rx="1"/><path d="M9 9V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/></symbol>
+    <symbol id="i-al" viewBox="0 0 24 24"><path d="M4 3v18M8 6h12v4H8zM8 14h7v4H8z"/></symbol>
+    <symbol id="i-acx" viewBox="0 0 24 24"><path d="M12 3v18M6 6h12v4H6zM8.5 14h7v4h-7z"/></symbol>
+    <symbol id="i-ar" viewBox="0 0 24 24"><path d="M20 3v18M4 6h12v4H4zM9 14h7v4H9z"/></symbol>
+    <symbol id="i-at" viewBox="0 0 24 24"><path d="M3 4h18M6 8h4v12H6zM14 8h4v7h-4z"/></symbol>
+    <symbol id="i-acy" viewBox="0 0 24 24"><path d="M3 12h18M6 6h4v12H6zM14 8.5h4v7h-4z"/></symbol>
+    <symbol id="i-ab" viewBox="0 0 24 24"><path d="M3 20h18M6 4h4v12H6zM14 9h4v7h-4z"/></symbol>
+    <symbol id="i-tl" viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></symbol>
+    <symbol id="i-tc" viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></symbol>
+    <symbol id="i-tr" viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></symbol>
+    <symbol id="i-vt" viewBox="0 0 24 24"><path d="M4 4h16M8 8h8M8 12h8"/></symbol>
+    <symbol id="i-vm" viewBox="0 0 24 24"><path d="M8 9h8M8 15h8M4 12h2M18 12h2"/></symbol>
+    <symbol id="i-vb" viewBox="0 0 24 24"><path d="M4 20h16M8 12h8M8 16h8"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <strong class="brand">PSF-20</strong>
+  <button id="conn" class="chip" title="Connect to the printer"><span class="dot" id="dot"></span><span id="st">Connect</span></button>
+  <span class="grow"></span>
+  <button class="ib" id="bUndo" title="Undo (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
+  <button class="ib" id="bRedo" title="Redo (Ctrl+Shift+Z)" disabled><svg><use href="#i-redo"/></svg></button>
+  <button class="ib" id="bDesigns" title="Designs and templates"><svg><use href="#i-folder"/></svg><span class="lbl">Designs</span></button>
+  <button class="ib" id="bSettings" title="Printer settings"><svg><use href="#i-sliders"/></svg><span class="lbl">Printer</span></button>
 </header>
-<div id="msg" role="status"></div>
-<details id="diag" open><summary>Connection check</summary><div id="diagbody" class="hint"></div><label style="margin-top:6px"><input type="checkbox" id="showall"> Show all Bluetooth devices in the picker (use if PSF-20 is not listed)</label></details>
-<nav role="tablist">
-  <button role="tab" data-t="text" aria-selected="true">Text</button>
-  <button role="tab" data-t="image" aria-selected="false">Image</button>
-  <button role="tab" data-t="codes" aria-selected="false">QR and barcodes</button>
-  <button role="tab" data-t="tools" aria-selected="false">Tools</button>
-</nav>
 
-<section id="t-text" class="on" data-r="renderText">
-  <textarea id="txt" aria-label="Text to print">Hello from my own app!
-Any language works: தமிழ், 你好, ₹100</textarea>
-  <div class="row">
-    <label>Size <input type="number" id="fs" value="28" min="10" max="120"></label>
-    <label>Font <select id="fam"><option value="system-ui,sans-serif">Sans</option><option value="Georgia,serif">Serif</option><option value="ui-monospace,Consolas,monospace">Mono</option><option value="cursive">Script</option></select></label>
-    <label>Align <select id="al"><option>left</option><option>center</option><option>right</option></select></label>
-  </div>
-  <div class="row">
-    <label><input type="checkbox" id="bd"> Bold</label>
-    <label><input type="checkbox" id="it"> Italic</label>
-    <label><input type="checkbox" id="tinv"> White on black</label>
-    <label>Darkness <input type="range" id="tthr" min="60" max="220" value="150"></label>
-  </div>
-  <div class="paper"><canvas id="tp" width="384" height="1"></canvas></div>
-  <button class="p" data-do="printText">Print text</button>
-  <p class="hint">Text is drawn as an image, so any font or script your computer can show will print. 48 mm wide.</p>
-</section>
+<div class="toolbar" role="toolbar" aria-label="Add elements">
+  <button class="tb" data-add="text" title="Add text (T)"><svg><use href="#i-text"/></svg><span>Text</span></button>
+  <button class="tb" data-add="image" title="Add image (I)"><svg><use href="#i-image"/></svg><span>Image</span></button>
+  <button class="tb" data-add="qr" title="Add QR code (Q)"><svg><use href="#i-qr"/></svg><span>QR</span></button>
+  <button class="tb" data-add="barcode" title="Add barcode (B)"><svg><use href="#i-barcode"/></svg><span>Barcode</span></button>
+  <button class="tb" data-add="rect" title="Add box (R)"><svg><use href="#i-rect"/></svg><span>Box</span></button>
+  <button class="tb" data-add="ellipse" title="Add circle (E)"><svg><use href="#i-ellipse"/></svg><span>Circle</span></button>
+  <button class="tb" data-add="line" title="Add line (L)"><svg><use href="#i-line"/></svg><span>Line</span></button>
+  <span class="sep"></span>
+  <button class="ib" id="bZoomOut" title="Zoom out (-)"><svg><use href="#i-minus"/></svg></button>
+  <button class="ib" id="bFit" title="Fit to screen (0)"><svg><use href="#i-fit"/></svg></button>
+  <button class="ib" id="bZoomIn" title="Zoom in (+)"><svg><use href="#i-plus"/></svg></button>
+  <button class="ib" id="bPreview" title="Show exactly what will print (P)" aria-pressed="false"><svg><use href="#i-eye"/></svg></button>
+  <input type="file" id="file" accept="image/*" hidden>
+</div>
 
-<section id="t-image" data-r="renderImg">
-  <div class="row"><input type="file" id="file" accept="image/*" aria-label="Choose image"></div>
-  <div class="row">
-    <label>Method <select id="dm"><option value="fs">Photo (Floyd-Steinberg)</option><option value="atk">Photo (Atkinson)</option><option value="thr">Sharp black and white</option></select></label>
-    <label>Cutoff <input type="range" id="ithr" min="40" max="230" value="128"></label>
-  </div>
-  <div class="row">
-    <label>Brightness <input type="range" id="br" min="50" max="170" value="100"></label>
-    <label>Contrast <input type="range" id="co" min="50" max="220" value="110"></label>
-  </div>
-  <div class="row">
-    <label><input type="checkbox" id="rot"> Rotate 90 degrees</label>
-    <label><input type="checkbox" id="iinv"> Invert</label>
-  </div>
-  <div class="paper"><canvas id="ip" width="384" height="1"></canvas></div>
-  <button class="p" data-do="printImg">Print image</button>
-</section>
+<div class="work">
+  <div id="stagewrap"><canvas id="stage" tabindex="0" aria-label="Label editor. Tap an element to select it, drag to move, use the handles to resize or rotate."></canvas></div>
+  <aside id="insp" aria-label="Properties"></aside>
+</div>
 
-<section id="t-codes">
-  <div class="row">
-    <label>Type <select id="ctype"><option value="qr">QR code</option><option value="c128">Code 128</option><option value="c39">Code 39</option><option value="ean13">EAN-13</option><option value="upca">UPC-A</option></select></label>
-    <label>Align <select id="calign"><option value="1">center</option><option value="0">left</option><option value="2">right</option></select></label>
-  </div>
-  <div class="row"><input type="text" id="cdata" value="https://rohithjv.in" style="flex:1;min-width:220px" aria-label="Content"></div>
-  <div class="row" id="qropts">
-    <label>Module size <input type="number" id="qs" value="6" min="1" max="16"></label>
-    <label>Error correction <select id="qe"><option value="48">L</option><option value="49" selected>M</option><option value="50">Q</option><option value="51">H</option></select></label>
-  </div>
-  <div class="row" id="bopts" hidden>
-    <label>Height <input type="number" id="bh" value="80" min="20" max="255"></label>
-    <label>Bar width <input type="number" id="bw" value="2" min="2" max="6"></label>
-  </div>
-  <button class="p" data-do="printCode">Print</button>
-  <p class="hint">EAN-13 needs 12 or 13 digits, UPC-A 11 or 12, Code 39 capital letters and digits. These use the printer's own commands.</p>
-</section>
+<footer class="printbar">
+  <button class="chip" id="paperChip" title="Paper settings"></button>
+  <span class="grow"></span>
+  <span class="copies" title="Copies"><button class="ib sm" id="cMinus" aria-label="Fewer copies"><svg><use href="#i-minus"/></svg></button><input type="number" id="copies" value="1" min="1" max="999" aria-label="Copies"><button class="ib sm" id="cPlus" aria-label="More copies"><svg><use href="#i-plus"/></svg></button></span>
+  <button class="p" id="bPrint"><svg><use href="#i-print"/></svg><span>Print</span></button>
+</footer>
+<div id="msg" role="status" aria-live="polite"></div>
 
-<section id="t-tools">
+<dialog id="dlgDesigns">
+  <form method="dialog" class="dh"><h2>Designs</h2><button class="ib" aria-label="Close">✕</button></form>
+  <div class="row"><input type="text" id="saveName" placeholder="Name this design" aria-label="Design name"><button class="p" id="bSave">Save</button></div>
+  <h3>Saved</h3>
+  <div id="savedList" class="list"></div>
+  <h3>Start from</h3>
+  <div id="tplList" class="tiles"></div>
+  <h3>File</h3>
+  <div class="row"><button id="bExport">Export design file</button><button id="bImport">Import design file</button><input type="file" id="importFile" accept=".json,application/json" hidden></div>
+  <p class="hint">Designs are kept in this browser only. Export a file to back one up or move it to another device.</p>
+</dialog>
+
+<dialog id="dlgSettings">
+  <form method="dialog" class="dh"><h2>Printer</h2><button class="ib" aria-label="Close">✕</button></form>
+  <h3>Connection</h3>
+  <div id="diagbody" class="hint mono"></div>
+  <label class="ck"><input type="checkbox" id="showall"> Show all Bluetooth devices in the picker (use if PSF-20 is not listed)</label>
+  <div class="row"><button id="bPickNew">Pick a different printer</button></div>
+  <h3>Quick actions</h3>
   <div class="row">
     <button data-do="feed3">Feed 3 lines</button>
     <button data-do="feed10">Feed 10 lines</button>
+    <button data-do="nextLabel">Next label</button>
     <button data-do="testPage">Test page</button>
   </div>
   <div class="row">
     <label>Rows <input type="number" id="srows" value="400" min="50" max="3000"></label>
     <button data-do="stress">Speed and integrity test</button>
   </div>
-  <p class="hint">The test prints an even checkerboard. If you see skipped or garbled bands, lower the chunk size or add a delay below.</p>
-  <div class="row"><input type="text" id="raw" placeholder="Raw hex, e.g. 1B 40 48 69 0A" style="flex:1;min-width:220px" aria-label="Raw hex bytes"><button data-do="sendRaw">Send</button></div>
-  <h3 style="margin:16px 0 0;font-size:15px">Transfer settings</h3>
+  <p class="hint">The speed test prints an even checkerboard. If you see skipped or garbled bands, lower the chunk size or add a delay below.</p>
+  <h3>Transfer</h3>
   <div class="row">
     <label>Chunk bytes <input type="number" id="c_chunk" min="20" max="512"></label>
     <label>Delay ms <input type="number" id="c_delay" min="0" max="200"></label>
     <label>Band rows <input type="number" id="c_band" min="16" max="1024"></label>
-    <label>Feed after <input type="number" id="c_feed" min="0" max="20"></label>
-    <label><input type="checkbox" id="c_resp"> Write with response (slower, safer)</label>
   </div>
+  <label class="ck"><input type="checkbox" id="c_resp"> Write with response (slower, safer)</label>
   <p class="hint">Chunk 20 always works. Over a good link 100 to 185 is usually fine and much faster.</p>
-</section>
+  <h3>Raw bytes</h3>
+  <div class="row"><input type="text" id="raw" placeholder="Hex, e.g. 1B 40 48 69 0A" aria-label="Raw hex bytes" class="grow"><button data-do="sendRaw">Send</button></div>
+  <h3>Log</h3>
+  <div id="log" class="mono" aria-live="off"></div>
+</dialog>
 
-<details open><summary>Log</summary><div id="log" aria-live="off"></div></details>
-</main>
-
-<script>
-const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const SVC='49535343-fe7d-4ae5-8fa9-9fafd205e455',WR='49535343-8841-43f4-a8d4-ecbe34729bb3',NT='49535343-1e4d-4bd9-ba61-23c647249616',W=384,WB=48;
-let dev,wch,img=null,cfg={chunk:20,delay:0,band:128,feed:3,resp:false};
-try{Object.assign(cfg,JSON.parse(localStorage.getItem('psf20')||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem('psf20',JSON.stringify(cfg))}catch(e){}};
-const hex=a=>[...a].map(b=>b.toString(16).padStart(2,'0')).join(' ');
-const asc=a=>[...a].map(b=>b>31&&b<127?String.fromCharCode(b):'.').join('');
-function log(m,c=''){const d=document.createElement('div');d.className=c;d.textContent=new Date().toTimeString().slice(0,8)+'  '+m;$('#log').prepend(d);while($('#log').children.length>150)$('#log').lastChild.remove()}
-function say(m,c=''){$('#msg').textContent=m;$('#msg').className=c}
-function cat(...p){const a=p.map(x=>typeof x==='number'?Uint8Array.of(x):typeof x==='string'?Uint8Array.from(x,c=>c.charCodeAt(0)<128?c.charCodeAt(0):63):x);const o=new Uint8Array(a.reduce((n,x)=>n+x.length,0));let i=0;for(const x of a){o.set(x,i);i+=x.length}return o}
-
-/* ---------- Bluetooth ---------- */
-function setState(on){$('#dot').className='dot'+(on?' on':'');$('#st').textContent=on?'Connected to '+dev.name:'Not connected';$('#conn').textContent=on?'Reconnect':'Connect'}
-async function link(){
-  const s=await dev.gatt.connect(),v=await s.getPrimaryService(SVC);
-  wch=await v.getCharacteristic(WR);
-  const n=await v.getCharacteristic(NT);await n.startNotifications();
-  n.addEventListener('characteristicvaluechanged',e=>{const a=new Uint8Array(e.target.value.buffer);const t=asc(a);log('printer: '+hex(a)+'  '+t,/NACK/.test(t)?'warn':'')});
-  setState(true);log('connected')
-}
-function hint(e){
-  const m=e&&e.message?e.message:String(e);
-  if(e&&e.name==='NotFoundError'&&/cancel|chooser/i.test(m))return 'No printer chosen. Switch the printer on, close anything else connected to it, then pick PSF-20-... in the list.';
-  if(e&&e.name==='NotFoundError')return 'No printer found. Check it is on and not connected to your phone, nRF Connect or a script. Tick "Show all Bluetooth devices" below if it is not listed.';
-  if(/br-connection-profile-unavailable|NetworkError|GATT|Connection attempt failed|Unsupported device/i.test(m))
-    return m+'. Only one device can use the printer at a time, so disconnect everything else first. On Linux, BlueZ must also be LE-only: sudo btmgmt power off; sudo btmgmt bredr off; sudo btmgmt power on.';
-  if(e&&e.name==='SecurityError')return m+'. Web Bluetooth only works on https:// pages or http://localhost.';
-  return m
-}
-async function diag(){
-  const r=[['Secure page (https or localhost)',window.isSecureContext],['Web Bluetooth in this browser',!!navigator.bluetooth]];
-  if(navigator.bluetooth&&navigator.bluetooth.getAvailability){try{r.push(['Bluetooth adapter available',await navigator.bluetooth.getAvailability()])}catch(e){r.push(['Bluetooth adapter available','unknown'])}}
-  const b=$('#diagbody');b.textContent='';
-  for(const [k,v] of r){const d=document.createElement('div');d.textContent=(v===true?'OK   ':v===false?'FAIL ':'?    ')+k;d.style.color=v===true?'var(--ok)':v===false?'var(--bad)':'var(--mute)';b.append(d)}
-  const ua=document.createElement('div');ua.textContent=navigator.userAgent;b.append(ua);
-  if(!navigator.bluetooth){const t=document.createElement('div');t.style.cssText='margin-top:6px;color:var(--bad)';
-    t.textContent='This browser cannot use Web Bluetooth. Use Chrome, Edge or Opera on Android, Windows, macOS, ChromeOS or Linux. Firefox, Safari and every browser on iPhone/iPad do not support it. On Linux Chrome, if this stays FAIL, open chrome://flags/#enable-experimental-web-platform-features, enable it and restart.';b.append(t)}
-  else if(!window.isSecureContext){const t=document.createElement('div');t.style.cssText='margin-top:6px;color:var(--bad)';t.textContent='Open this page over https:// (for example your Vercel link) or http://localhost.';b.append(t)}
-}
-async function connect(){
-  try{
-    if(!navigator.bluetooth)throw Error('This browser has no Web Bluetooth. See the connection check above.');
-    if(!dev||!$('#conn').dataset.again){
-      dev=await navigator.bluetooth.requestDevice($('#showall').checked?{acceptAllDevices:true,optionalServices:[SVC]}:{filters:[{namePrefix:'PSF-20'}],optionalServices:[SVC]});
-      dev.addEventListener('gattserverdisconnected',()=>{setState(false);log('disconnected','warn')});
-    }
-    await link();$('#conn').dataset.again=1;say('Connected','ok')
-  }catch(e){const h=hint(e);say(h,'err');log(e.name+': '+(e.message||e),'err');delete $('#conn').dataset.again}
-}
-async function send(data){
-  if(!dev)throw Error('Connect to the printer first.');
-  if(!dev.gatt.connected){log('relinking','warn');await link()}
-  const c=cfg.chunk;
-  for(let i=0;i<data.length;i+=c){
-    const p=data.slice(i,i+c);
-    if(wch.writeValueWithoutResponse&&!cfg.resp)await wch.writeValueWithoutResponse(p);else await wch.writeValue(p);
-    if(cfg.delay)await sleep(cfg.delay)
-  }
-}
-
-/* ---------- Bitmaps ---------- */
-function toBits(c,mode,thr,inv){
-  const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,g=new Float32Array(w*h),o=new Uint8Array(h*WB);
-  for(let i=0;i<w*h;i++){const v=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];g[i]=inv?255-v:v}
-  const add=(x,y,e)=>{if(x>=0&&x<w&&y<h)g[y*w+x]+=e};
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const i=y*w+x,v=g[i],n=v<thr?0:255,e=v-n;
-    if(!n)o[y*WB+(x>>3)]|=0x80>>(x&7);
-    if(mode==='fs'){add(x+1,y,e*7/16);add(x-1,y+1,e*3/16);add(x,y+1,e*5/16);add(x+1,y+1,e/16)}
-    else if(mode==='atk'){const q=e/8;add(x+1,y,q);add(x+2,y,q);add(x-1,y+1,q);add(x,y+1,q);add(x+1,y+1,q);add(x,y+2,q)}
-  }
-  return o
-}
-function show(id,bits,h){
-  const c=$(id);c.width=W;c.height=h;const x=c.getContext('2d'),im=x.createImageData(W,h);
-  for(let y=0;y<h;y++)for(let i=0;i<W;i++){const k=(y*W+i)*4,v=bits[y*WB+(i>>3)]&(0x80>>(i&7))?0:255;im.data[k]=im.data[k+1]=im.data[k+2]=v;im.data[k+3]=255}
-  x.putImageData(im,0,0)
-}
-async function printBits(bits,h){
-  await send(cat(0x1b,0x40));
-  for(let y=0;y<h;y+=cfg.band){const n=Math.min(cfg.band,h-y);await send(cat(0x1d,0x76,0x30,0,WB,0,n&255,n>>8,bits.subarray(y*WB,(y+n)*WB)))}
-  await send(cat(0x1b,0x64,cfg.feed))
-}
-
-/* ---------- Text ---------- */
-function brk(x,l,m){const r=[];let c='';for(const ch of l){if(x.measureText(c+ch).width>m&&c){r.push(c);c=ch}else c+=ch}r.push(c);return r}
-function wrap(x,s,m){
-  const out=[];
-  for(const p of s.split('\n')){let cur='';for(const w of p.split(' ')){const t=cur?cur+' '+w:w;if(x.measureText(t).width<=m||!cur)cur=t;else{out.push(cur);cur=w}}out.push(cur)}
-  return out.flatMap(l=>x.measureText(l).width>m?brk(x,l,m):[l])
-}
-function renderText(){
-  const fs=+$('#fs').value||28,pad=10,lh=Math.round(fs*1.25);
-  const font=`${$('#it').checked?'italic ':''}${$('#bd').checked?'bold ':''}${fs}px ${$('#fam').value}`;
-  const c=document.createElement('canvas');c.width=W;c.height=10;let x=c.getContext('2d');x.font=font;
-  const lines=wrap(x,$('#txt').value,W-2*pad);
-  c.height=Math.max(1,lines.length*lh+2*pad);x=c.getContext('2d');
-  x.fillStyle='#fff';x.fillRect(0,0,W,c.height);x.fillStyle='#000';x.font=font;x.textBaseline='top';
-  const al=$('#al').value;x.textAlign=al;const px=al==='left'?pad:al==='center'?W/2:W-pad;
-  lines.forEach((l,i)=>x.fillText(l,px,pad+i*lh));
-  const bits=toBits(c,'thr',+$('#tthr').value,$('#tinv').checked);show('#tp',bits,c.height);
-  return{bits,h:c.height}
-}
-
-/* ---------- Image ---------- */
-$('#file').onchange=e=>{
-  const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f),i=new Image();
-  i.onload=()=>{img=i;URL.revokeObjectURL(u);renderImg()};i.onerror=()=>say('Could not read that image.','err');i.src=u
-};
-function renderImg(){
-  if(!img)return null;
-  const r=$('#rot').checked,sw=r?img.height:img.width,sh=r?img.width:img.height,h=Math.max(1,Math.round(sh*W/sw));
-  const c=document.createElement('canvas');c.width=W;c.height=h;const x=c.getContext('2d');
-  x.fillStyle='#fff';x.fillRect(0,0,W,h);x.filter=`brightness(${$('#br').value}%) contrast(${$('#co').value}%)`;
-  if(r){x.translate(W,0);x.rotate(Math.PI/2);x.drawImage(img,0,0,h,W)}else x.drawImage(img,0,0,W,h);
-  const bits=toBits(c,$('#dm').value,+$('#ithr').value,$('#iinv').checked);show('#ip',bits,h);
-  return{bits,h}
-}
-
-/* ---------- Codes ---------- */
-function codeBytes(){
-  const t=$('#ctype').value,d=$('#cdata').value,al=cat(0x1b,0x61,+$('#calign').value);
-  if(!d)throw Error('Enter something to encode.');
-  if(t==='qr'){
-    const s=new TextEncoder().encode(d),n=s.length+3;
-    return cat(al,0x1d,0x28,0x6b,4,0,0x31,0x41,0x32,0,0x1d,0x28,0x6b,3,0,0x31,0x43,+$('#qs').value,0x1d,0x28,0x6b,3,0,0x31,0x45,+$('#qe').value,0x1d,0x28,0x6b,n&255,n>>8,0x31,0x50,0x30,s,0x1d,0x28,0x6b,3,0,0x31,0x51,0x30,'\n')
-  }
-  if(t==='ean13'&&!/^\d{12,13}$/.test(d))throw Error('EAN-13 needs 12 or 13 digits.');
-  if(t==='upca'&&!/^\d{11,12}$/.test(d))throw Error('UPC-A needs 11 or 12 digits.');
-  if(t==='c39'&&!/^[0-9A-Z \-.$\/+%]+$/.test(d))throw Error('Code 39 takes capital letters, digits and - . $ / + %');
-  const m={c128:73,c39:69,ean13:67,upca:65}[t],body=t==='c128'?'{B'+d:d;
-  return cat(al,0x1d,0x68,+$('#bh').value,0x1d,0x77,+$('#bw').value,0x1d,0x48,2,0x1d,0x6b,m,body.length,body,'\n')
-}
-
-/* ---------- Actions ---------- */
-const act={
-  async printText(){const r=renderText();await printBits(r.bits,r.h)},
-  async printImg(){const r=renderImg();if(!r)throw Error('Choose an image first.');await printBits(r.bits,r.h)},
-  async printCode(){const b=codeBytes();await send(cat(0x1b,0x40));await send(b);await send(cat(0x1b,0x61,0,0x1b,0x64,cfg.feed))},
-  async feed3(){await send(cat(0x1b,0x64,3))},
-  async feed10(){await send(cat(0x1b,0x64,10))},
-  async testPage(){
-    await send(cat(0x1b,0x40,0x1b,0x61,1,'PSF-20 test page\n',0x1b,0x61,0));
-    await send(cat(0x1b,0x61,1,0x1d,0x28,0x6b,4,0,0x31,0x41,0x32,0,0x1d,0x28,0x6b,3,0,0x31,0x43,5,0x1d,0x28,0x6b,3,0,0x31,0x45,49,0x1d,0x28,0x6b,10,0,0x31,0x50,0x30,'PSF20 OK!',0x1d,0x28,0x6b,3,0,0x31,0x51,0x30,'\n',0x1b,0x61,0));
-    await send(cat(0x1b,0x64,cfg.feed))
-  },
-  async stress(){
-    const n=Math.max(50,+$('#srows').value||400),b=new Uint8Array(n*WB);
-    for(let y=0;y<n;y++)for(let i=0;i<WB;i++)b[y*WB+i]=(i+((y>>3)&1))%2?0:255;
-    const t=performance.now();await printBits(b,n);
-    const s=(performance.now()-t)/1000;log(`${n*WB+n} bytes sent in ${s.toFixed(1)} s (${Math.round(n*WB/s)} B/s)`)
-  },
-  async sendRaw(){
-    const h=$('#raw').value.replace(/[^0-9a-f]/gi,'');
-    if(!h.length||h.length%2)throw Error('Enter whole hex bytes.');
-    await send(Uint8Array.from(h.match(/../g),x=>parseInt(x,16)))
-  }
-};
-document.addEventListener('click',async e=>{
-  const b=e.target.closest('[data-do]');
-  if(b){b.disabled=true;say('Printing...');
-    try{await act[b.dataset.do]();say('Done','ok')}catch(x){say(x.message,'err');log(x.message,'err')}
-    b.disabled=false;return}
-  const t=e.target.closest('nav button');
-  if(t){document.querySelectorAll('nav button').forEach(n=>n.setAttribute('aria-selected',n===t));
-    document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='t-'+t.dataset.t))}
-});
-document.addEventListener('input',e=>{
-  const p=e.target.closest('[data-r]');if(p&&p.id!=='t-codes'){const f=window[p.dataset.r];f&&f()}
-  if(e.target.id==='ctype'){const q=e.target.value==='qr';$('#qropts').hidden=!q;$('#bopts').hidden=q;$('#cdata').value=q?'https://rohithjv.in':({c128:'PSF20-001',c39:'PSF20',ean13:'4006381333931',upca:'036000291452'})[e.target.value]}
-  const k=e.target.id;
-  if(k&&k.startsWith('c_')){const v=k==='c_resp'?e.target.checked:Math.max(0,+e.target.value||0);cfg[k.slice(2)]=v;if(cfg.chunk<20)cfg.chunk=20;save()}
-});
-$('#conn').onclick=connect;
-for(const k of ['chunk','delay','band','feed'])$('#c_'+k).value=cfg[k];
-$('#c_resp').checked=cfg.resp;
-renderText();diag();
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
